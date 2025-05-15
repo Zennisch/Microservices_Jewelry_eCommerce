@@ -63,8 +63,8 @@ class PNJScraper:
             product_id = str(product_data["product_id"]).zfill(6)
 
             # Save the raw JSON
-            with open(f"data/{self.item_type}/json/{product_id}.json", "w", encoding="utf-8") as f:
-                json.dump(data, f, ensure_ascii=False, indent=2)
+            # with open(f"data/{self.item_type}/json/{product_id}.json", "w", encoding="utf-8") as f:
+            #     json.dump(data, f, ensure_ascii=False, indent=2)
 
             return data
 
@@ -313,7 +313,18 @@ class PNJScraper:
         variants = []
 
         for data in all_products_data:
-            products.append(self.extract_product_data(data))
+            product_data = self.extract_product_data(data)
+            # Only include complete product records
+            if product_data and 'id' in product_data:
+                products.append(product_data)
+                categories.extend(self.extract_category_data(data))
+                images.extend(self.extract_product_images(data))
+                features.extend(self.extract_product_features(data))
+                variants.extend(self.extract_product_variants(data))
+            else:
+                self.logger.warning(f"Skipping incomplete product data")
+                continue
+
             categories.extend(self.extract_category_data(data))
             images.extend(self.extract_product_images(data))
             features.extend(self.extract_product_features(data))
