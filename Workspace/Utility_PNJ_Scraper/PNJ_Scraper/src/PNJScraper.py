@@ -3,6 +3,7 @@ import json
 import os
 import re
 from datetime import datetime
+import random
 from typing import Dict, List, Any, Optional, Tuple
 
 from aiohttp import ClientSession
@@ -21,6 +22,61 @@ class PNJScraper:
         os.makedirs(f"data/{item_type}/json", exist_ok=True)
         os.makedirs(f"data/{item_type}/images", exist_ok=True)
         os.makedirs(f"data/{item_type}/sql", exist_ok=True)
+
+    def determine_material(self, product_name: str) -> str:
+        """Determine material based on product name or randomly if not found"""
+        product_name = product_name.lower()
+
+        if "vàng" in product_name:
+            return "Gold"
+        elif "bạc" in product_name:
+            return "Silver"
+        elif "kim cương" in product_name or "diamond" in product_name:
+            return "Diamond"
+        elif "ngọc trai" in product_name or "pearl" in product_name:
+            return "Pearl"
+        elif "đá quý" in product_name or "ruby" in product_name or "sapphire" in product_name:
+            return "Gemstone"
+        elif "platinum" in product_name or "bạch kim" in product_name:
+            return "Platinum"
+        else:
+            # Random selection if not found in name
+            materials = ["Gold", "Silver", "Diamond", "Pearl", "Gemstone", "Platinum", "Mixed"]
+            return random.choice(materials)
+
+    def generate_gold_karat(self, material: str) -> Optional[int]:
+        """Generate appropriate gold karat based on material"""
+        if material == "Gold":
+            return random.choice([10, 14, 18, 24])
+        return None  # Not applicable for other materials
+
+    def generate_color(self, material: str) -> str:
+        """Generate appropriate color based on material"""
+        if material == "Gold":
+            return random.choice(["Yellow", "White", "Rose"])
+        elif material == "Silver":
+            return "Silver"
+        elif material == "Platinum":
+            return "White"
+        elif material == "Pearl":
+            return random.choice(["White", "Black", "Pink", "Cream"])
+        elif material == "Diamond":
+            return random.choice(["Clear", "White", "Yellow", "Pink", "Blue"])
+        elif material == "Gemstone":
+            return random.choice(["Red", "Blue", "Green", "Purple", "Yellow", "Pink", "Orange"])
+        else:
+            return random.choice(["Mixed", "Gold", "Silver", "Various"])
+
+    def generate_brand(self) -> str:
+        """Generate a random brand"""
+        brands = ["PNJ", "DOJI", "SJC", "Tinh Tú Jewelry", "Kim Ngọc Uy Tín",
+                  "Vàng Bạc Đá Quý Phú Nhuận", "Vàng Bạc Đá Quý Thế Giới",
+                  "Vàng Bạc Đá Quý Minh Phát", "Vàng Bạc Đá Quý Châu Á"]
+        return random.choice(brands)
+
+    def generate_gender(self) -> int:
+        """Generate a random gender (0=female, 1=male, 2=unisex)"""
+        return random.choice([0, 1, 2])
 
     async def fetch(self, url: str, return_bytes: bool = False):
         """Fetch HTML content or binary content (for images) asynchronously"""
@@ -98,15 +154,25 @@ class PNJScraper:
         product = {}
         try:
             product_data = data["props"]["pageProps"]["dataServerSide"]
+            product_name = self.sanitize_text(product_data["product"])
+
+            # Determine material based on name or random
+            material = self.determine_material(product_name)
+
             product = {
                 "id": product_data["product_id"],
-                "name": self.sanitize_text(product_data["product"]),
+                "name": product_name,
                 "code": product_data["product_code"],
                 "description": self.sanitize_text(product_data.get("full_description", "")),
                 "price": product_data["price"],
                 "status": "ACTIVE" if product_data.get("status") == "A" else "INACTIVE",
                 "quantity": product_data.get("amount", 0),
                 "category_id": data["props"]["pageProps"]["dataServerSide"]["category_seo"][0]["category_id"],
+                "material": material,
+                "gold_karat": self.generate_gold_karat(material),
+                "color": self.generate_color(material),
+                "brand": self.generate_brand(),
+                "gender": self.generate_gender(),
                 "created_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
                 "updated_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
             }
@@ -221,13 +287,15 @@ class PNJScraper:
         # Insert products
         sql += "\n-- Products Table\n"
         for product in products:
-            # Version without ON CONFLICT
+            # Handle NULL values properly
+            gold_karat = "NULL" if product.get('gold_karat') is None else product['gold_karat']
+
             sql += f"DO $$ BEGIN\n"
             sql += f"    IF NOT EXISTS (SELECT 1 FROM products WHERE id = {product['id']}) THEN\n"
-            sql += f"        INSERT INTO products (id, name, code, description, price, status, quantity, category_id, created_at, updated_at) VALUES \n"
-            sql += f"        ({product['id']}, '{product['name']}', '{product['code']}', '{product['description']}', {product['price']}, '{product['status']}', {product['quantity']}, {product['category_id']}, '{product['created_at']}', '{product['updated_at']}');\n"
+            sql += f"        INSERT INTO products (id, name, code, description, price, status, quantity, category_id, material, gold_karat, color, brand, gender, created_at, updated_at) VALUES \n"
+            sql += f"        ({product['id']}, '{product['name']}', '{product['code']}', '{product['description']}', {product['price']}, '{product['status']}', {product['quantity']}, {product['category_id']}, '{product['material']}', {gold_karat}, '{product['color']}', '{product['brand']}', {product['gender']}, '{product['created_at']}', '{product['updated_at']}');\n"
             sql += f"    ELSE\n"
-            sql += f"        UPDATE products SET name = '{product['name']}', price = {product['price']}, status = '{product['status']}', quantity = {product['quantity']}, updated_at = '{product['updated_at']}' WHERE id = {product['id']};\n"
+            sql += f"        UPDATE products SET name = '{product['name']}', price = {product['price']}, status = '{product['status']}', quantity = {product['quantity']}, material = '{product['material']}', gold_karat = {gold_karat}, color = '{product['color']}', brand = '{product['brand']}', gender = {product['gender']}, updated_at = '{product['updated_at']}' WHERE id = {product['id']};\n"
             sql += f"    END IF;\n"
             sql += f"END $$;\n"
 
