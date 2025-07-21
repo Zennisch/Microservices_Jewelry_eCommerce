@@ -1,0 +1,5 @@
+version: '3.8'
+
+include:
+  - Backend/Workspace/docker-compose.yml
+  - Frontend/Workspace_Final/docker-compose.yml
