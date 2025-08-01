@@ -1,0 +1,86 @@
+version: '3.8'
+
+services:
+    container:
+        build:
+            context: ./Frontend/Workspace/Container/container-vite
+            dockerfile: Dockerfile
+        ports:
+            - '3000:3000'
+        environment:
+            - NODE_ENV=${NODE_ENV}
+            - HOST=${HOST}
+            - VITE_BACKEND_HOST=${VITE_BACKEND_HOST}
+            - VITE_BACKEND_PORT=${VITE_BACKEND_PORT}
+            - VITE_FRONTEND_HOST=${VITE_FRONTEND_HOST}
+            - VITE_FRONTEND_PORT=${VITE_FRONTEND_PORT}
+        networks:
+            - frontend-network
+
+    frontend-service-account:
+        build:
+            context: ./Frontend/Workspace/Service_Account/service-account-vite
+            dockerfile: Dockerfile
+        ports:
+            - '3001:3001'
+        environment:
+            - NODE_ENV=${NODE_ENV}
+            - HOST=${HOST}
+            - VITE_FRONTEND_HOST=${VITE_FRONTEND_HOST}
+            - VITE_FRONTEND_PORT=${VITE_FRONTEND_PORT}
+        networks:
+            - frontend-network
+        depends_on:
+            - container
+
+    frontend-service-manager:
+        build:
+            context: ./Frontend/Workspace/Service_Manager/service-manager-vite
+            dockerfile: Dockerfile
+        ports:
+            - '3003:3003'
+        environment:
+            - NODE_ENV=${NODE_ENV}
+            - HOST=${HOST}
+            - VITE_FRONTEND_HOST=${VITE_FRONTEND_HOST}
+            - VITE_FRONTEND_PORT=${VITE_FRONTEND_PORT}
+        networks:
+            - frontend-network
+        depends_on:
+            - container
+
+    frontend-service-catalog:
+        build:
+            context: ./Frontend/Workspace/Service_Catalog/service-catalog-vite
+            dockerfile: Dockerfile
+        ports:
+            - '3005:3005'
+        environment:
+            - NODE_ENV=${NODE_ENV}
+            - HOST=${HOST}
+            - VITE_FRONTEND_HOST=${VITE_FRONTEND_HOST}
+            - VITE_FRONTEND_PORT=${VITE_FRONTEND_PORT}
+        networks:
+            - frontend-network
+        depends_on:
+            - container
+
+    frontend-service-cart-order:
+        build:
+            context: ./Frontend/Workspace/Service_Cart_Order/service-cart-order-vite
+            dockerfile: Dockerfile
+        ports:
+            - '3006:3006'
+        environment:
+            - NODE_ENV=${NODE_ENV}
+            - HOST=${HOST}
+            - VITE_FRONTEND_HOST=${VITE_FRONTEND_HOST}
+            - VITE_FRONTEND_PORT=${VITE_FRONTEND_PORT}
+        networks:
+            - frontend-network
+        depends_on:
+            - container
+
+networks:
+    frontend-network:
+        driver: bridge
