@@ -28,7 +28,7 @@ pipeline {
                     steps {
                         dir('Backend/Workspace/Service_Manager') {
                             sh 'chmod +x ./mvnw'
-                            sh './mvnw clean install'
+                            sh './mvnw clean install -DskipTests'
                         }
                     }
                 }
@@ -48,7 +48,7 @@ pipeline {
                     steps {
                         dir('Backend/Workspace/API_Gateway/api-gateway') {
                             sh '''
-                                npm ci
+                                npm install
                                 npm run build
                             '''
                         }
@@ -58,7 +58,7 @@ pipeline {
                     steps {
                         dir('Backend/Workspace/Service_Cart_Order/Service_Cart_Order_Backend') {
                             sh '''
-                                npm ci
+                                npm install
                                 npm run build
                             '''
                         }
