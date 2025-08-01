@@ -1,0 +1,47 @@
+version: '3.8'
+
+services:
+  jenkins-blueocean:
+    build:
+      context: .
+      dockerfile: Dockerfile.Jenkins
+    image: myjenkins-blueocean:2.504.3-1
+    container_name: jenkins-blueocean
+    restart: on-failure
+    networks:
+      - jenkins
+    environment:
+      - DOCKER_HOST=tcp://docker:2376
+      - DOCKER_CERT_PATH=/certs/client
+      - DOCKER_TLS_VERIFY=1
+    volumes:
+      - jenkins-data:/var/jenkins_home
+      - jenkins-docker-certs:/certs/client:ro
+    ports:
+      - "8080:8080"
+      - "50000:50000"
+    depends_on:
+      - jenkins-proxy
+
+  jenkins-proxy:
+    image: alpine/socat
+    container_name: jenkins-proxy
+    restart: always
+    networks:
+      - jenkins
+    ports:
+      - "127.0.0.1:2376:2375"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    command: tcp-listen:2375,fork,reuseaddr unix-connect:/var/run/docker.sock
+
+networks:
+  jenkins:
+    driver: bridge
+    external: false
+
+volumes:
+  jenkins-data:
+    driver: local
+  jenkins-docker-certs:
+    driver: local
