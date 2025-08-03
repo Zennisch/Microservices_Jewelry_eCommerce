@@ -1,1 +1,4 @@
 .env
+.terraform
+gcp_key.json
+Terraform/terraform.tfvars

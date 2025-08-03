@@ -47,14 +47,14 @@ pipeline {
                 stage('API Gateway') {
                     steps {
                         dir('Backend/Workspace/API_Gateway/api-gateway') {
-                            echo 'This service doesn not need to be tested'
+                            echo 'This service doesn not need to be built'
                         }
                     }
                 }
                 stage('Cart Order Service') {
                     steps {
                         dir('Backend/Workspace/Service_Cart_Order/Service_Cart_Order_Backend') {
-                            echo 'This service doesn not need to be tested'
+                            echo 'This service doesn not need to be built'
                         }
                     }
                 }
@@ -63,7 +63,7 @@ pipeline {
         stage('Build Python Services') {
             steps {
                 dir('Backend/Workspace/Service_Chatbot/Service_Chatbot_Python') {
-                    echo 'This service doesn not need to be tested'
+                    echo 'This service doesn not need to be built'
                 }
             }
         }
