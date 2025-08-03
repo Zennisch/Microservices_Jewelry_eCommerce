@@ -21,7 +21,7 @@ resource "google_compute_instance" "jec_vm" {
     startup-script = file("startup-script.sh")
   }
 
-  tags = ["jec", "allow-ssh"]
+  tags = ["jec", "allow-ssh", "allow-app-ports"]
 }
 
 resource "google_compute_firewall" "allow_ssh" {
@@ -35,4 +35,43 @@ resource "google_compute_firewall" "allow_ssh" {
 
   source_ranges = ["0.0.0.0/0"]
   target_tags   = ["allow-ssh"]
+}
+
+resource "google_compute_firewall" "allow_app_ports_3000" {
+  name    = "allow-app-ports-3000-jec"
+  network = "default"
+
+  allow {
+    protocol = "tcp"
+    ports    = ["3000-3009"]
+  }
+
+  source_ranges = ["0.0.0.0/0"]
+  target_tags   = ["allow-app-ports"]
+}
+
+resource "google_compute_firewall" "allow_app_port_5000" {
+  name    = "allow-app-port-5000-jec"
+  network = "default"
+
+  allow {
+    protocol = "tcp"
+    ports    = ["5000"]
+  }
+
+  source_ranges = ["0.0.0.0/0"]
+  target_tags   = ["allow-app-ports"]
+}
+
+resource "google_compute_firewall" "allow_app_ports_8000" {
+  name    = "allow-app-ports-8000-jec"
+  network = "default"
+
+  allow {
+    protocol = "tcp"
+    ports    = ["8000-8009"]
+  }
+
+  source_ranges = ["0.0.0.0/0"]
+  target_tags   = ["allow-app-ports"]
 }
