@@ -10,6 +10,7 @@ pipeline {
                     file(credentialsId: 'JEC_GCP_FILE', variable: 'GCP_FILE'),
                     file(credentialsId: 'JEC_SSH_FILE', variable: 'SSH_FILE')
                 ]) {
+                    sh 'rm -f "$WORKSPACE/.env" "$WORKSPACE/gcp_key.json" "$WORKSPACE/id_ed25519"'
                     sh 'cp "$ENV_FILE" "$WORKSPACE/.env"'
                     sh 'cp "$GCP_FILE" "$WORKSPACE/gcp_key.json"'
                     sh 'cp "$SSH_FILE" "$WORKSPACE/id_ed25519"'
@@ -151,7 +152,7 @@ pipeline {
                         # Remove existing project if exists
                         if [ -d "Microservices_Jewelry_eCommerce" ]; then
                             echo "Removing existing project directory"
-                            sudo docker-compose -f Microservices_Jewelry_eCommerce/docker-compose.yml down || true
+                            sudo docker compose -f Microservices_Jewelry_eCommerce/docker-compose.yml down || true
                             rm -rf Microservices_Jewelry_eCommerce
                         fi
 
@@ -177,13 +178,13 @@ EOF
                         cd ~/Microservices_Jewelry_eCommerce
 
                         echo "Starting services with docker-compose"
-                        sudo docker-compose up -d --build
+                        sudo docker compose up -d --build
 
                         echo "Waiting for services to start..."
                         sleep 30
 
                         echo "Checking running containers:"
-                        sudo docker-compose ps
+                        sudo docker compose ps
 
                         echo "Deployment completed successfully"
 EOF
@@ -236,15 +237,6 @@ EOF
     }
 
     post {
-        always {
-            echo 'Cleaning up credentials files'
-            sh '''
-                rm -f "$WORKSPACE/.env" || true
-                rm -f "$WORKSPACE/.env.clean" || true
-                rm -f "$WORKSPACE/gcp_key.json" || true
-                rm -f "$WORKSPACE/id_ed25519" || true
-            '''
-        }
         success {
             echo 'Pipeline completed successfully'
             sh '''
@@ -272,9 +264,9 @@ EOF
                     ssh -i "$SSH_KEY" -o StrictHostKeyChecking=no "$SSH_USER@$VM_HOST" << 'EOF' || true
                         cd ~/Microservices_Jewelry_eCommerce
                         echo "=== Docker Compose Status ==="
-                        sudo docker-compose ps
+                        sudo docker compose ps
                         echo "=== Container Logs ==="
-                        sudo docker-compose logs --tail=50
+                        sudo docker compose logs --tail=50
 EOF
                 fi
             '''
