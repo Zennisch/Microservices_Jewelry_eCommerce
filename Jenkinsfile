@@ -178,7 +178,8 @@ EOF
                         cd ~/Microservices_Jewelry_eCommerce
 
                         echo "Starting services with docker-compose"
-                        sudo docker compose up -d --build
+                        sudo docker compose -f docker-compose.backend.yml up -d --build
+                        sudo docker compose -f docker-compose.frontend.yml up -d --build
 
                         echo "Waiting for services to start..."
                         sleep 30
