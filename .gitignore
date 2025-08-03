@@ -1,6 +1,7 @@
 .env
-.terraform
+**/.terraform
 gcp_key.json
 Terraform/terraform.tfvars
 Terraform/terraform.tfstate
 Terraform/terraform.tfstate.backup
+Terraform/.terraform.*

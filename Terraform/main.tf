@@ -5,20 +5,19 @@ resource "google_compute_instance" "jec_vm" {
 
   boot_disk {
     initialize_params {
-      image = "ubuntu-minimal-2504-plucky-amd64-v20250708"
+      image = "ubuntu-2404-lts-amd64"
       size  = 30
       type  = "pd-standard"
     }
   }
 
   network_interface {
-    network       = "default"
+    network = "default"
     access_config {}
   }
 
   metadata = {
     ssh-keys = var.ssh_public_key
-    startup-script = file("startup-script.sh")
   }
 
   tags = ["jec", "allow-ssh", "allow-app-ports"]
