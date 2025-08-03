@@ -17,7 +17,7 @@ resource "google_compute_instance" "jec_vm" {
   }
 
   metadata = {
-    ssh-keys = "ray:ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAICunYr8q+3s1AOOB/sWgQkzxavVQEUC05CShhUe7qi+X"
+    ssh-keys = var.ssh_public_key
     startup-script = file("startup-script.sh")
   }
 
