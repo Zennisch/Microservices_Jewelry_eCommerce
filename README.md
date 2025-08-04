@@ -521,10 +521,10 @@ Dự án này được phân phối dưới giấy phép MIT License. Xem file `
 | Tên thành viên | Vai trò | Email | GitHub |
 |----------------|---------|-------|--------|
 | [Nguyễn Thiên Phú] | Team Lead / Full-stack Developer / DevOps Engineer | zennisch@gmail.com | [@Thiên Phú](https://github.com/Zennisch) |
-| [Vũ Quốc Huy] | Account & Admin Service Developer | quochuyab2003@gmail.com | [@tuitenhyu](https://github.com/QuocHuyGIT103) |
-| [Đinh Trần Phú Khang] | Cart & Order Service Developer | dtphukhang210320033@gmail.com | [@DinhTranPhuKhang](https://github.com/khangdinh2103) |
-| [Trần Quốc Khánh] | Manager Service Engineer | tqkhanhsn@gmail.com | [@Khánh](https://github.com/Tq-Khanhs) |
-| [Lê Đại Phát] | Product Service Developer | phatpro1208@gmail.com | [@Lê Đại Phát](https://github.com/ldp2003) |
+| [Vũ Quốc Huy] | Account & Admin Service Developer / DevOps Engineer | quochuyab2003@gmail.com | [@tuitenhyu](https://github.com/QuocHuyGIT103) |
+| [Đinh Trần Phú Khang] | Cart & Order Service Developer / DevOps Engineer | dtphukhang210320033@gmail.com | [@DinhTranPhuKhang](https://github.com/khangdinh2103) |
+| [Trần Quốc Khánh] | Manager Service Developer | tqkhanhsn@gmail.com | [@Khánh](https://github.com/Tq-Khanhs) |
+| [Lê Đại Phát] | Product Service Developer / Fault-Tolerant Engineer | phatpro1208@gmail.com | [@Lê Đại Phát](https://github.com/ldp2003) |
 | [Nguyễn Thanh Tuyền] | User Service Developer | nguyenthanhtuyen221103@gmail.com | [@Tuyền](https://github.com/ThanhTuyenz) |
 
 ## 📞 Liên hệ & Hỗ trợ
