@@ -167,17 +167,28 @@ docker-compose -f docker-compose.frontend.yml up -d
 
 ### ☁️ Triển khai production trên Google Cloud
 
+#### Yêu cầu GCP Services
+
+Đảm bảo các services sau đã được enable trên Google Cloud Project:
+- **Compute Engine API** - Tạo và quản lý VM instances
+- **Google Identity Services** - OAuth2 authentication
+- **IAM Service Account Credentials API** - Quản lý service accounts
+- **Generative Language API** - Google Gemini AI cho chatbot
+
 #### 1. Chuẩn bị GCP environment
 
 ```bash
+# Copy Service Account JSON file vào root directory
+cp path/to/your-service-account.json gcp_key.json
+
 # Cấu hình Terraform variables
 cd Terraform
 cp terraform.tfvars.template terraform.tfvars
 
-# Điền thông tin GCP:
-# - project_id
-# - region
-# - ssh_public_key
+# Điền thông tin GCP trong terraform.tfvars:
+# gcp_project = "your-project-id"
+# gcp_region = "us-central1"  # hoặc region phù hợp
+# ssh_public_key = "username:ssh-rsa AAAAB3NzaC1yc2E... username@hostname"
 ```
 
 #### 2. Tạo infrastructure
@@ -188,28 +199,188 @@ terraform init
 
 # Tạo VM instance và firewall rules
 terraform apply -auto-approve
+
+# Lấy external IP của VM instance từ output hoặc GCP Console
 ```
 
-#### 3. Setup CI/CD với Jenkins
+#### 3. Cài đặt môi trường trên VM instance
 
 ```bash
-# Khởi động Jenkins server
+# SSH vào VM instance
+ssh -i path/to/private-key username@<VM_EXTERNAL_IP>
+
+# Cập nhật hệ thống
+sudo apt update && sudo apt upgrade -y
+
+# Cài đặt Git
+sudo apt install git -y
+
+# Cấu hình Git (thay thế bằng thông tin của bạn)
+git config --global user.name "Your Name"
+git config --global user.email "your.email@example.com"
+
+# Cài đặt Docker
+sudo apt install apt-transport-https ca-certificates curl software-properties-common -y
+curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
+echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+sudo apt update
+sudo apt install docker-ce docker-ce-cli containerd.io -y
+
+# Cấu hình Docker permissions
+sudo groupadd docker
+sudo usermod -aG docker $USER
+newgrp docker
+
+# Cài đặt Docker Compose
+sudo curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+sudo chmod +x /usr/local/bin/docker-compose
+
+# Kiểm tra cài đặt
+docker --version
+docker-compose --version
+git --version
+
+# Clone repository với submodules
+git clone --recurse-submodules https://github.com/Zennisch/Microservices_Jewelry_eCommerce.git
+cd Microservices_Jewelry_eCommerce
+```
+
+#### 4. Chuẩn bị môi trường production
+
+```bash
+# Tạo file .env từ template (trên VM)
+cp .env.template .env
+
+# Chỉnh sửa file .env với thông tin production
+nano .env
+
+# Cập nhật các biến môi trường sau:
+# VITE_BACKEND_HOST=<VM_EXTERNAL_IP>
+# VITE_FRONTEND_HOST=<VM_EXTERNAL_IP>
+# ACCOUNT_SPRING_MAIL_USERNAME=your-email@gmail.com
+# ACCOUNT_SPRING_MAIL_PASSWORD=your-app-password
+# ACCOUNT_SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_GOOGLE_CLIENT_ID=your-client-id
+# ACCOUNT_SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_GOOGLE_CLIENT_SECRET=your-client-secret
+# GEMINI_API_KEY=your-gemini-api-key
+```
+
+#### 5. Setup CI/CD với Jenkins
+
+```bash
+# Khởi động Jenkins server (chạy trên VM hoặc local machine)
 docker-compose -f docker-compose.jenkins.yml up -d
+
+# Đợi Jenkins khởi động (khoảng 2-3 phút)
+docker logs -f jenkins-blueocean
 
 # Lấy admin password
 docker exec jenkins-blueocean cat /var/jenkins_home/secrets/initialAdminPassword
 ```
 
-#### 4. Cấu hình Jenkins Pipeline
+#### 6. Cấu hình Jenkins Pipeline
 
-1. Truy cập Jenkins UI: http://localhost:8080
-2. Cài đặt plugins đề xuất
-3. Tạo credentials:
-   - **JEC_ENV_FILE**: Upload file `.env`
-   - **JEC_GCP_FILE**: Upload file `gcp_key.json`
-   - **JEC_SSH_FILE**: Upload SSH private key
-4. Tạo pipeline từ SCM với repository URL
-5. Chạy pipeline để deploy lên GCP
+1. **Truy cập Jenkins UI**: http://localhost:8080 (nếu chạy local) hoặc http://<VM_IP>:8080
+2. **Cài đặt plugins**: Chọn "Install suggested plugins"
+3. **Tạo admin user**: Điền thông tin admin user
+4. **Thêm credentials**:
+   - Vào "Manage Jenkins" → "Credentials" → "(global)" → "Add Credentials"
+   - Tạo các credentials sau:
+     ```
+     Kind: Secret file
+     ID: JEC_ENV_FILE
+     File: Upload file .env
+     
+     Kind: Secret file
+     ID: JEC_GCP_FILE
+     File: Upload file gcp_key.json
+     
+     Kind: Secret file
+     ID: JEC_SSH_FILE
+     File: Upload SSH private key (id_ed25519 hoặc id_rsa)
+     ```
+
+5. **Tạo Pipeline**:
+   - Dashboard → "New Item"
+   - Tên: "Microservices_Jewelry_eCommerce"
+   - Chọn "Pipeline" → "OK"
+   - Trong "Pipeline" section:
+     - Definition: "Pipeline script from SCM"
+     - SCM: "Git"
+     - Repository URL: `https://github.com/Zennisch/Microservices_Jewelry_eCommerce`
+     - Branches: `*/master`
+     - Additional Behaviours → "Advanced sub-modules behaviours" → "Recursively update submodules"
+     - Script Path: `Jenkinsfile`
+   - Save configuration
+
+#### 7. Chạy deployment pipeline
+
+```bash
+# Trong Jenkins UI:
+# 1. Vào pipeline "Microservices_Jewelry_eCommerce"
+# 2. Click "Build Now"
+# 3. Theo dõi build progress trong "Pipeline Overview" hoặc "Console Output"
+
+# Kiểm tra logs realtime (nếu cần)
+docker logs -f jenkins-blueocean
+```
+
+#### 8. Kiểm tra deployment
+
+Sau khi pipeline hoàn thành thành công:
+
+```bash
+# Trên VM instance, kiểm tra containers đang chạy
+docker ps
+
+# Kiểm tra logs của các services
+docker-compose logs -f
+
+# Test các endpoints
+curl http://<VM_EXTERNAL_IP>:8000/health  # API Gateway health check
+curl http://<VM_EXTERNAL_IP>:3000         # Frontend application
+```
+
+**Truy cập ứng dụng**: http://`<VM_EXTERNAL_IP>`:3000
+
+#### 9. Troubleshooting thường gặp
+
+```bash
+# Nếu Docker permission denied
+sudo chmod 666 /var/run/docker.sock
+
+# Nếu ports bị conflict
+sudo netstat -tulpn | grep :8080  # Kiểm tra port usage
+
+# Nếu out of disk space
+docker system prune -af  # Dọn dẹp containers và images cũ
+
+# Restart all services
+docker-compose restart
+
+# Xem logs chi tiết của service cụ thể
+docker-compose logs -f service-name
+```
+
+#### 10. Optional: Import dữ liệu sản phẩm
+
+```bash
+# Mở firewall cho database port (chỉ từ IP của bạn)
+gcloud compute firewall-rules create allow-postgres-6543 \
+  --allow tcp:6543 \
+  --source-ranges=<YOUR_IP_ADDRESS>/32 \
+  --target-tags=allow-6543 \
+  --description="Allow access to PostgreSQL for data import"
+
+# Chạy scraper để import dữ liệu từ PNJ
+cd Utility/PNJ_Scraper
+python3 -m pip install -r requirements.txt
+python3 src/PNJScraper.py
+
+# Nhập thông tin khi được hỏi:
+# - Item type: nhan, day-chuyen, lac, etc.
+# - Start page: 1
+# - End page: 5 (hoặc số trang muốn scrape)
+```
 
 ### 📱 Setup Delivery Mobile App
 
@@ -349,11 +520,12 @@ Dự án này được phân phối dưới giấy phép MIT License. Xem file `
 
 | Tên thành viên | Vai trò | Email | GitHub |
 |----------------|---------|-------|--------|
-| [Tên thành viên 1] | Team Lead / Full-stack Developer | email1@example.com | [@username1](https://github.com/username1) |
-| [Tên thành viên 2] | Backend Developer | email2@example.com | [@username2](https://github.com/username2) |
-| [Tên thành viên 3] | Frontend Developer | email3@example.com | [@username3](https://github.com/username3) |
-| [Tên thành viên 4] | DevOps Engineer | email4@example.com | [@username4](https://github.com/username4) |
-| [Tên thành viên 5] | Mobile Developer | email5@example.com | [@username5](https://github.com/username5) |
+| [Nguyễn Thiên Phú] | Team Lead / Full-stack Developer / DevOps Engineer | zennisch@gmail.com | [@Thiên Phú](https://github.com/Zennisch) |
+| [Vũ Quốc Huy] | Account & Admin Service Developer | quochuyab2003@gmail.com | [@tuitenhyu](https://github.com/QuocHuyGIT103) |
+| [Đinh Trần Phú Khang] | Cart & Order Service Developer | dtphukhang210320033@gmail.com | [@DinhTranPhuKhang](https://github.com/khangdinh2103) |
+| [Trần Quốc Khánh] | Manager Service Engineer | tqkhanhsn@gmail.com | [@Khánh](https://github.com/Tq-Khanhs) |
+| [Lê Đại Phát] | Product Service Developer | phatpro1208@gmail.com | [@Lê Đại Phát](https://github.com/ldp2003) |
+| [Nguyễn Thanh Tuyền] | User Service Developer | nguyenthanhtuyen221103@gmail.com | [@Tuyền](https://github.com/ThanhTuyenz) |
 
 ## 📞 Liên hệ & Hỗ trợ
 
